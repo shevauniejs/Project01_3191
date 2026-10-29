@@ -17,9 +17,9 @@ class Sender(BasicSender.BasicSender):
     def start(self):
         r_address = (dest,port)
         INIT = 1
-        seqn = 0 #initialized to 0
-        lrAck = 0 #last received ack
-        lsPackets = [] #saves packets in case of drop
+        base = 1
+        nextseqnum = 1
+        N = 4 # should be seven
         kinds = ("syn", "ack", "fin", "dat")
         chunk = 1472
         marker = 0
@@ -27,31 +27,33 @@ class Sender(BasicSender.BasicSender):
         size = self.infile.tell()
         
         #start handshake
-        init_handshake = super(Sender, self).make_packet(kinds[0], seqn,"")
+        init_handshake = super(Sender, self).make_packet(kinds[0], nextseqnum,"")
         super(Sender, self).send(init_handshake, r_address);
         init_handshake_response = super(Sender, self).receive()
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
         start = Checksum.validate_checksum(init_handshake_response) and ack>=INIT
-        if start:
-            while start:
-                marker+= chunk
-                seqn+=1
-                #make packet
-                if marker<=size:
-                    data = self.infile.read(marker) 
-                    data_packet = super(Sender, self).make_packet(kinds[3],seqn, data)
-                    super(Sender, self).send(data_packet, r_address) #send packet
-                    response = super(Sender, self).receive()
-                    splitResp = super(Sender, self).split_packet(response)
-                    kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
-                else:
-                    data_packet = super(Sender, self).make_packet(kinds[2],seqn, "")
-                    print "Complete"
-                    start = False
-        else:
-            self.sock.close()
-            print "Connection failed"
+        while start:
+            if marker>=size:
+                break
+            marker += chunk
+            print marker
+            print size
+            if nextseqnum<base+N :
+                data = self.infile.read(chunk)
+                print "data: %s" % data
+                data_packet = super(Sender, self).make_packet(kinds[3],nextseqnum, data)
+                super(Sender, self).send(data_packet, r_address)
+                nextseqnum+=1
+            response = super(Sender, self).receive()
+            splitResp = super(Sender, self).split_packet(response)
+            kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
+            base = ack
+            print "new base: %d " % base
+        
+                
+            
+        
 '''
 This will be run if you run this script from the command line. You should not
 change any of this; the grader may rely on the behavior here to test your

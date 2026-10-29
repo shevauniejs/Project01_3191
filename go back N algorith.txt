@@ -1,0 +1,20 @@
+Go Back N algorithm
+
+start
+init seqn to 0
+init senoQ, ackQ as empty queues
+init packetBuffer as empty queue size 7
+if seqn-last ack <7 then:
+add seqn to senoQ
+get data from file
+make packet
+send the packet
+increase seqn
+else if seqn >=7:
+receive ack packets
+add ack number to  ackQ
+-->if last ack number< senoQ[7]:
+get packet in packetBuffer
+send packet 
+
+

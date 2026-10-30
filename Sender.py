@@ -19,60 +19,60 @@ class Sender(BasicSender.BasicSender):
         INIT = 1
         base = 1
         nextseqnum = 1
-        N = 7 # window size, should be seven
+        N = 5 # window size, should be seven
         packetBuffer = [None]*N
         kinds = ("syn", "ack", "fin", "dat")
-        chunk = 500
+        chunk = 1471 # should be 1471
         marker = 0
-        time = 0.005
+        time = 1
         
-        file = self.infile.read()
+        cache = self.infile.read()
         self.infile.seek(0,2)
         size = self.infile.tell()
         self.infile.seek(0)
         
-        #start handshake
+        #start handshake - make packet w/ seq #0 then send
         init_handshake = super(Sender, self).make_packet(kinds[0], 0,"")
         super(Sender, self).send(init_handshake, r_address);
         packetBuffer[0] = init_handshake
         
+        #send and loop until valid syn-ack received 
         init_handshake_response = super(Sender, self).receive(time)
         while init_handshake_response == None or Checksum.validate_checksum(init_handshake_response)==False:
-            print "Resending packet.."
             super(Sender, self).send(packetBuffer[0], r_address)
             init_handshake_response = super(Sender, self).receive(time)
-            print init_handshake_response
-                
+        #validate connect and start main loop    
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
         start = Checksum.validate_checksum(init_handshake_response) and ack==INIT           
             
         while start:
-            if marker>=size:
-                fin = super(Sender, self).make_packet(kinds[2],nextseqnum, "")
-                super(Sender, self).send(data_packet, r_address)
-                self.infile.close()
-                break
-            if nextseqnum<base+N :
-                data = file[marker:chunk]
+            if nextseqnum<base+N : #get data from cache, 
+                data = cache[marker:chunk]
                 marker=chunk
-                chunk+=chunk
-                packPos = nextseqnum%N                
-                print "make packet \n"
+                if chunk<=size:
+                    chunk+=chunk
+                else:
+                    chunk+=size-chunk-1
+                packPos = nextseqnum%N  #a packet's position in d'buffer is mod window size              
+                #print data
                 data_packet = super(Sender, self).make_packet(kinds[3],nextseqnum, data)
-                packetBuffer[packPos] = data_packet
+                packetBuffer[packPos] = data_packet #buffer packet incase of loss
                 super(Sender, self).send(data_packet, r_address)
                 nextseqnum+=1
             response = super(Sender, self).receive(time)
             while response == None:
                     super(Sender, self).send(packetBuffer[packPos], r_address)
                     response = super(Sender, self).receive(time)
-                    print response
+                    #print response
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
             base = ack
-            print "last ack %d" % ack
-            print "received packet\n"
+            if marker>size+1:
+                fin = super(Sender, self).make_packet(kinds[2],nextseqnum, "")
+                super(Sender, self).send(data_packet, r_address)
+                self.infile.close()
+                break
         
 
                 

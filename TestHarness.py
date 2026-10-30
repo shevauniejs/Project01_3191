@@ -19,8 +19,8 @@ def tests_to_run(forwarder):
     RandomDropTest.RandomDropTest("RandDropTest", forwarder, "README")
     #SackRandomDropTest.SackRandomDropTest("SackTest", forwarder, "README")
     #SeqnoAndTypeTest.SeqnoAndTypeTest("BinaryDrpDat", f, "b.png", seqnos = range(0,10000,2), types = ["dat"])
-    #SeqnoAndTypeTest.SeqnoAndTypeTest("DropSyn", f, "b.png", seqnos = range(0,10000), types = ["syn"])
-    #SeqnoAndTypeTest.SeqnoAndTypeTest("DropAtBeginning", f, "b.png", seqnos = range(0,10), types = ["syn", "dat"])
+    SeqnoAndTypeTest.SeqnoAndTypeTest("DropSyn", f, "b.png", seqnos = range(0,10000), types = ["syn"])
+    SeqnoAndTypeTest.SeqnoAndTypeTest("DropAtBeginning", f, "b.png", seqnos = range(0,10), types = ["syn", "dat"])
 
 """
 Testing is divided into two pieces: this forwarder and a set of test cases in

@@ -4,6 +4,7 @@ import getopt
 import Checksum
 import BasicSender
 
+
 '''
 This is a skeleton sender class. Create a fantastic transport protocol here.
 '''
@@ -15,11 +16,12 @@ class Sender(BasicSender.BasicSender):
 
     # Main sending loop.
     def start(self):
+        from time import sleep
         r_address = (dest,port)
         INIT = 1
         base = 1
         nextseqnum = 1
-        N = 5 # window size, should be seven
+        N = 3 # window size, should be seven
         packetBuffer = [None]*N
         kinds = ("syn", "ack", "fin", "dat")
         chunk = 1471 # should be 1471
@@ -31,6 +33,8 @@ class Sender(BasicSender.BasicSender):
         size = self.infile.tell()
         self.infile.seek(0)
         
+        nPack = size//chunk + 1
+        print "number of packets %d" % nPack
         #start handshake - make packet w/ seq #0 then send
         init_handshake = super(Sender, self).make_packet(kinds[0], 0,"")
         super(Sender, self).send(init_handshake, r_address);
@@ -44,35 +48,40 @@ class Sender(BasicSender.BasicSender):
         #validate connect and start main loop    
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
-        start = Checksum.validate_checksum(init_handshake_response) and ack==INIT           
-            
-        while start:
-            if nextseqnum<base+N : #get data from cache, 
-                data = cache[marker:chunk]
+        start = Checksum.validate_checksum(init_handshake_response) and ack==INIT
+        
+        while base<nPack: #
+            while nextseqnum<base+N and nextseqnum<nPack:
+                if chunk>size:
+                    start = False
+                data = cache[marker:chunk] #get data from cache,
                 marker=chunk
-                if chunk<=size:
+                if chunk<size:
                     chunk+=chunk
                 else:
-                    chunk+=size-chunk-1
+                    chunk+=size-chunk
                 packPos = nextseqnum%N  #a packet's position in d'buffer is mod window size              
                 #print data
                 data_packet = super(Sender, self).make_packet(kinds[3],nextseqnum, data)
                 packetBuffer[packPos] = data_packet #buffer packet incase of loss
                 super(Sender, self).send(data_packet, r_address)
-                nextseqnum+=1
+                nextseqnum+=1  
+#####################################################################            
+            print "Stopped sending packets"
             response = super(Sender, self).receive(time)
-            while response == None:
-                    super(Sender, self).send(packetBuffer[packPos], r_address)
-                    response = super(Sender, self).receive(time)
+            #while response == None:
+                #super(Sender, self).send(packetBuffer[packPos], r_address)
+                #response = super(Sender, self).receive(time)
                     #print response
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
             base = ack
-            if marker>size+1:
-                fin = super(Sender, self).make_packet(kinds[2],nextseqnum, "")
-                super(Sender, self).send(data_packet, r_address)
-                self.infile.close()
-                break
+            #print ack
+            #start==false
+            #print packetBuffer
+        #fin = super(Sender, self).make_packet(kinds[2],nextseqnum, "")
+        #super(Sender, self).send(data_packet, r_address)
+        #self.infile.close()
         
 
                 

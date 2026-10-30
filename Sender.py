@@ -59,8 +59,8 @@ class Sender(BasicSender.BasicSender):
                 super(Sender, self).send(data_packet, r_address)
                 nextseqnum+=1
             print "receive packet\n"
-            response = super(Sender, self).receive(.005)
-            while response== None:
+            response = super(Sender, self).receive()
+            while response == None:
                     super(Sender, self).send(packetBuffer[packPos], r_address)
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]

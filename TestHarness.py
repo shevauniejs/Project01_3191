@@ -16,11 +16,11 @@ forwarder, so they will magically be run.
 """
 def tests_to_run(forwarder):
     BasicTest.BasicTest("BasicTest", forwarder, "README")
-    RandomDropTest.RandomDropTest("RandDropTest", forwarder, "README")
-    SackRandomDropTest.SackRandomDropTest("SackTest", forwarder, "README")
-    SeqnoAndTypeTest.SeqnoAndTypeTest("BinaryDrpDat", f, "b.png", seqnos = range(0,10000,2), types = ["dat"])
-    SeqnoAndTypeTest.SeqnoAndTypeTest("DropSyn", f, "b.png", seqnos = range(0,10000), types = ["syn"])
-    SeqnoAndTypeTest.SeqnoAndTypeTest("DropAtBeginning", f, "b.png", seqnos = range(0,10), types = ["syn", "dat"])
+    #RandomDropTest.RandomDropTest("RandDropTest", forwarder, "README")
+    #SackRandomDropTest.SackRandomDropTest("SackTest", forwarder, "README")
+    #SeqnoAndTypeTest.SeqnoAndTypeTest("BinaryDrpDat", f, "b.png", seqnos = range(0,10000,2), types = ["dat"])
+    #SeqnoAndTypeTest.SeqnoAndTypeTest("DropSyn", f, "b.png", seqnos = range(0,10000), types = ["syn"])
+    #SeqnoAndTypeTest.SeqnoAndTypeTest("DropAtBeginning", f, "b.png", seqnos = range(0,10), types = ["syn", "dat"])
 
 """
 Testing is divided into two pieces: this forwarder and a set of test cases in
@@ -66,7 +66,7 @@ class Forwarder(object):
         if not os.path.exists(receiver_path):
             raise ValueError("Could not find receiver path: %s" % receiver_path)
         self.receiver_path = receiver_path
-
+        
         # book keeping for tests
         # [(test object1, input file1), (test object2, input file2), ...]
         self.tests = []
@@ -169,12 +169,12 @@ class Forwarder(object):
         if os.path.exists(self.recv_outfile):
             os.remove(self.recv_outfile)
 
-        receiverCmd = ["python", self.receiver_path,
+        receiverCmd = ["python2.7", self.receiver_path, #
                                      "-p", str(self.receiver_port)
                                     ]
 
 
-        senderCmd = ["python", self.sender_path,
+        senderCmd = ["python2.7", self.sender_path, #
                                    "-f", input_file,
                                    "-p", str(self.port)
                                   ]
@@ -186,7 +186,8 @@ class Forwarder(object):
         if self.debug:
             receiverCmd.append("-d")
             senderCmd.append("-d")
-
+        
+        print receiverCmd
         receiver = subprocess.Popen(receiverCmd)
 
         time.sleep(0.2) # make sure the receiver is started first

@@ -24,9 +24,9 @@ class Sender(BasicSender.BasicSender):
         N = 3 # window size, should be seven
         packetBuffer = [None]*N
         kinds = ("syn", "ack", "fin", "dat")
-        chunk = 1471 # should be 1471
+        chunk = 100 # should be 1471
         marker = 0
-        time = 1
+        time = .01
         
         cache = self.infile.read()
         self.infile.seek(0,2)
@@ -69,13 +69,19 @@ class Sender(BasicSender.BasicSender):
 #####################################################################            
             print "Stopped sending packets"
             response = super(Sender, self).receive(time)
-            #while response == None:
-                #super(Sender, self).send(packetBuffer[packPos], r_address)
-                #response = super(Sender, self).receive(time)
+            while response == None:
+                super(Sender, self).send(packetBuffer[packPos], r_address)
+                response = super(Sender, self).receive(time)
                     #print response
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
+            if ack > base:
+                base = ack
+            else:
+                super(Sender, self).send(packetBuffer[base%N], r_address)
+                response = super(Sender, self).receive(time)
             base = ack
+                
             #print ack
             #start==false
             #print packetBuffer

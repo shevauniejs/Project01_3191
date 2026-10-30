@@ -19,11 +19,12 @@ class Sender(BasicSender.BasicSender):
         INIT = 1
         base = 1
         nextseqnum = 1
-        N = 3 # window size, should be seven
+        N = 7 # window size, should be seven
         packetBuffer = [None]*N
         kinds = ("syn", "ack", "fin", "dat")
-        chunk = 1472
+        chunk = 500
         marker = 0
+        time = 0.005
         
         file = self.infile.read()
         self.infile.seek(0,2)
@@ -33,11 +34,15 @@ class Sender(BasicSender.BasicSender):
         #start handshake
         init_handshake = super(Sender, self).make_packet(kinds[0], 0,"")
         super(Sender, self).send(init_handshake, r_address);
-        packetBuffer[0] = ""
+        packetBuffer[0] = init_handshake
         
-        init_handshake_response = super(Sender, self).receive()
+        init_handshake_response = super(Sender, self).receive(time)
         while init_handshake_response == None or Checksum.validate_checksum(init_handshake_response)==False:
-                    super(Sender, self).send(packetBuffer[packPos], r_address)
+            print "Resending packet.."
+            super(Sender, self).send(packetBuffer[0], r_address)
+            init_handshake_response = super(Sender, self).receive(time)
+            print init_handshake_response
+                
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
         start = Checksum.validate_checksum(init_handshake_response) and ack==INIT           
@@ -58,13 +63,16 @@ class Sender(BasicSender.BasicSender):
                 packetBuffer[packPos] = data_packet
                 super(Sender, self).send(data_packet, r_address)
                 nextseqnum+=1
-            print "receive packet\n"
-            response = super(Sender, self).receive()
+            response = super(Sender, self).receive(time)
             while response == None:
                     super(Sender, self).send(packetBuffer[packPos], r_address)
+                    response = super(Sender, self).receive(time)
+                    print response
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
             base = ack
+            print "last ack %d" % ack
+            print "received packet\n"
         
 
                 

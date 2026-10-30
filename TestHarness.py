@@ -16,7 +16,7 @@ forwarder, so they will magically be run.
 """
 def tests_to_run(forwarder):
     BasicTest.BasicTest("BasicTest", forwarder, "README")
-    #RandomDropTest.RandomDropTest("RandDropTest", forwarder, "README")
+    RandomDropTest.RandomDropTest("RandDropTest", forwarder, "README")
     #SackRandomDropTest.SackRandomDropTest("SackTest", forwarder, "README")
     #SeqnoAndTypeTest.SeqnoAndTypeTest("BinaryDrpDat", f, "b.png", seqnos = range(0,10000,2), types = ["dat"])
     #SeqnoAndTypeTest.SeqnoAndTypeTest("DropSyn", f, "b.png", seqnos = range(0,10000), types = ["syn"])
@@ -187,7 +187,6 @@ class Forwarder(object):
             receiverCmd.append("-d")
             senderCmd.append("-d")
         
-        print receiverCmd
         receiver = subprocess.Popen(receiverCmd)
 
         time.sleep(0.2) # make sure the receiver is started first

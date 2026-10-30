@@ -19,38 +19,54 @@ class Sender(BasicSender.BasicSender):
         INIT = 1
         base = 1
         nextseqnum = 1
-        N = 4 # should be seven
+        N = 3 # window size, should be seven
+        packetBuffer = [None]*N
         kinds = ("syn", "ack", "fin", "dat")
         chunk = 1472
         marker = 0
+        
+        file = self.infile.read()
         self.infile.seek(0,2)
         size = self.infile.tell()
+        self.infile.seek(0)
         
         #start handshake
-        init_handshake = super(Sender, self).make_packet(kinds[0], nextseqnum,"")
+        init_handshake = super(Sender, self).make_packet(kinds[0], 0,"")
         super(Sender, self).send(init_handshake, r_address);
+        packetBuffer[0] = ""
+        
         init_handshake_response = super(Sender, self).receive()
+        while init_handshake_response == None or Checksum.validate_checksum(init_handshake_response)==False:
+                    super(Sender, self).send(packetBuffer[packPos], r_address)
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
-        start = Checksum.validate_checksum(init_handshake_response) and ack>=INIT
+        start = Checksum.validate_checksum(init_handshake_response) and ack==INIT           
+            
         while start:
             if marker>=size:
+                fin = super(Sender, self).make_packet(kinds[2],nextseqnum, "")
+                super(Sender, self).send(data_packet, r_address)
+                self.infile.close()
                 break
-            marker += chunk
-            print marker
-            print size
             if nextseqnum<base+N :
-                data = self.infile.read(chunk)
-                print "data: %s" % data
+                data = file[marker:chunk]
+                marker=chunk
+                chunk+=chunk
+                packPos = nextseqnum%N                
+                print "make packet \n"
                 data_packet = super(Sender, self).make_packet(kinds[3],nextseqnum, data)
+                packetBuffer[packPos] = data_packet
                 super(Sender, self).send(data_packet, r_address)
                 nextseqnum+=1
-            response = super(Sender, self).receive()
+            print "receive packet\n"
+            response = super(Sender, self).receive(.005)
+            while response== None:
+                    super(Sender, self).send(packetBuffer[packPos], r_address)
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
             base = ack
-            print "new base: %d " % base
         
+
                 
             
         

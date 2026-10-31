@@ -26,7 +26,7 @@ class Sender(BasicSender.BasicSender):
         kinds = ("syn", "ack", "fin", "dat")
         chunk = 100 # should be 1471
         marker = 0
-        time = .01
+        delay = .01
         
         cache = self.infile.read()
         self.infile.seek(0,2)
@@ -41,10 +41,10 @@ class Sender(BasicSender.BasicSender):
         packetBuffer[0] = init_handshake
         
         #send and loop until valid syn-ack received 
-        init_handshake_response = super(Sender, self).receive(time)
+        init_handshake_response = super(Sender, self).receive(delay)
         while init_handshake_response == None or Checksum.validate_checksum(init_handshake_response)==False:
             super(Sender, self).send(packetBuffer[0], r_address)
-            init_handshake_response = super(Sender, self).receive(time)
+            init_handshake_response = super(Sender, self).receive(delay)
         #validate connect and start main loop    
         splitMessage = super(Sender, self).split_packet(init_handshake_response)
         kind, ack, data, cksm = splitMessage[0], int(splitMessage[1]), splitMessage[2], splitMessage[3]
@@ -68,18 +68,23 @@ class Sender(BasicSender.BasicSender):
                 nextseqnum+=1  
 #####################################################################            
             print "Stopped sending packets"
-            response = super(Sender, self).receive(time)
+            response = super(Sender, self).receive(delay)
             while response == None:
                 super(Sender, self).send(packetBuffer[packPos], r_address)
-                response = super(Sender, self).receive(time)
+                response = super(Sender, self).receive(delay)
                     #print response
             splitResp = super(Sender, self).split_packet(response)
             kind, ack, data, cksm = splitResp[0], int(splitResp[1]), splitResp[2], splitResp[3]
-            if ack > base:
+            if kind == "sack":
+                sackData = ack.split(";")
+                qack, sacks= int(sackData[0]), sackData[1]
+                print qack
+            if ack > base and Checksum.validate_checksum(response):
                 base = ack
+                #lrAck time = 
             else:
                 super(Sender, self).send(packetBuffer[base%N], r_address)
-                response = super(Sender, self).receive(time)
+                response = super(Sender, self).receive(delay)
             base = ack
                 
             #print ack
